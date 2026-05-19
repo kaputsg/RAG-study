@@ -1,6 +1,6 @@
 from typing import Optional
 
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from app.config import settings
@@ -29,10 +29,6 @@ class DeepSeekClient:
         # 当前使用的模型名
         self.model = settings.DEEPSEEK_MODEL
 
-    @retry(
-        stop=stop_after_attempt(3),                 # 最多重试 3 次
-        wait=wait_exponential(multiplier=1, min=1, max=6)  # 重试间隔逐渐变长
-    )
     def chat(
         self,
         user_message: str,
@@ -71,23 +67,49 @@ class DeepSeekClient:
         })
 
         #打印当前使用的模型名
-        if show_model_name == True:
+        if show_model_name :
             print(f"当前模型名是： {self.model}")
-        else:
-            return
+       
 
         # 发送请求
-        response = self.client.chat.completions.create(
+        try:
+            answer = self._send_request(
+                messages=messages,
+                temperature=temperature,
+                max_tokens=max_tokens
+            )
+            return answer
+        
+        except OpenAIError as e:
+            return f"模型 API 调用失败: {e}"
+        
+        except Exception as e:
+            return f"程序发生未知错误: {e}"
+        
+    @retry(
+        stop=stop_after_attempt(3),                 # 最多重试 3 次
+        wait=wait_exponential(multiplier=1, min=1, max=6),  # 重试间隔逐渐变长
+        reraise=True    
+    )
+
+    def _send_request(
+        self,
+        messages,
+        temperature: float,
+        max_tokens: int
+    ) -> str:
+            response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens
-        )
+            )
 
-        # 取出模型回答
-        answer = response.choices[0].message.content
+             # 取出模型回答
+            answer = response.choices[0].message.content
 
-        return answer
+            return answer
+    
     
     
 
