@@ -1,2 +1,1 @@
-# RAG-study
-This is my RAG study project.Welcome everyone to provide some advises to my study.
+7天RAG后端实战项目：DeepSeek API + BGE Embedding + FAISS + FastAPI。本仓库是国内镜像，适合配合学习资料包使用。
