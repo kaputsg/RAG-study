@@ -1,6 +1,9 @@
 <script setup>
 import { ref } from "vue"
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"
+
+
 // 用户输入的问题
 const question = ref("")
 
@@ -18,8 +21,10 @@ const errorMessage = ref("")
 
 async function handleSubmit() {
   if (!question.value.trim()) {
-    answer.value = "请先输入问题。"
-    return
+  answer.value = "请先输入问题。"
+  sources.value = []
+  errorMessage.value = ""
+  return
   }
 
   loading.value = true
@@ -28,7 +33,7 @@ async function handleSubmit() {
   errorMessage.value = ""
 
   try {
-    const response = await fetch("http://127.0.0.1:8000/ask", {
+    const response = await fetch(`${API_BASE_URL}/ask`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -66,6 +71,7 @@ async function handleSubmit() {
 
       <textarea
         v-model="question"
+        :disabled="loading"
         placeholder="例如：开发 Python 后端 API 接口服务推荐用什么框架？"
       ></textarea>
 
@@ -75,6 +81,10 @@ async function handleSubmit() {
         {{ loading ? "正在思考..." : "提交问题" }}
       </button>
 
+      <p class="loading-text" v-if="loading">
+        正在检索知识库并生成回答，请稍等...
+      </p>
+
       <div class="error-box" v-if="errorMessage">
         {{ errorMessage }}
       </div>
@@ -83,6 +93,10 @@ async function handleSubmit() {
         <h2>回答</h2>
         <p>{{ answer }}</p>
       </div>
+
+       <p class="no-sources" v-if="answer && sources.length === 0">
+          暂无引用来源。
+       </p>
 
       <div class="sources-box" v-if="sources.length > 0">
         <h2>引用来源</h2>
@@ -98,7 +112,10 @@ async function handleSubmit() {
             <span>相似度：{{ source.score.toFixed(4) }}</span>
           </div>
 
-          <p class="source-text">{{ source.text }}</p>
+          <details class="source-detail">
+            <summary>查看片段内容</summary>
+            <p class="source-text">{{ source.text }}</p>
+          </details>
         </div>
       </div>
 
@@ -147,6 +164,11 @@ textarea {
   box-sizing: border-box;
 }
 
+textarea:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
 button {
   margin-top: 16px;
   padding: 12px 22px;
@@ -165,6 +187,12 @@ button:hover {
 button:disabled {
   cursor: not-allowed;
   opacity: 0.6;
+}
+
+.loading-text {
+  margin-top: 14px;
+  color: #4b5563;
+  font-size: 14px;
 }
 
 .answer-box {
@@ -195,6 +223,12 @@ button:disabled {
   margin-bottom: 14px;
 }
 
+.no-sources {
+  margin-top: 16px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
 .source-item {
   padding: 16px;
   margin-bottom: 14px;
@@ -212,8 +246,18 @@ button:disabled {
   margin-bottom: 10px;
 }
 
+.source-detail {
+  margin-top: 10px;
+}
+
+.source-detail summary {
+  cursor: pointer;
+  color: #111827;
+  font-weight: 500;
+}
+
 .source-text {
-  margin: 0;
+  margin-top: 10px;
   color: #374151;
   line-height: 1.7;
   white-space: pre-wrap;
