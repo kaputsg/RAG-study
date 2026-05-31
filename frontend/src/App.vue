@@ -19,6 +19,12 @@ const loading = ref(false)
 // 错误信息
 const errorMessage = ref("")
 
+const selectedFile = ref(null)
+
+const uploadMessage = ref("")
+
+const uploading = ref(false)
+
 async function handleSubmit() {
   if (!question.value.trim()) {
   answer.value = "请先输入问题。"
@@ -58,6 +64,58 @@ async function handleSubmit() {
     loading.value = false
   }
 }
+
+function handleFileChange(event) {
+  selectedFile.value = event.target.files[0] || null
+  uploadMessage.value = ""
+}
+
+async function handleUpload() {
+  if (!selectedFile.value) {
+    uploadMessage.value = "请先选择 txt 文件。"
+    return
+  }
+
+  if (!selectedFile.value.name.toLowerCase().endsWith(".txt")) {
+    uploadMessage.value = "目前只支持上传 .txt 文件。"
+    return
+  }
+
+  uploading.value = true
+  uploadMessage.value = ""
+  errorMessage.value = ""
+
+  try {
+    const formData = new FormData()
+    formData.append("file", selectedFile.value)
+
+    const response = await fetch(`${API_BASE_URL}/documents/upload`, {
+      method: "POST",
+      body: formData
+    })
+
+    if (!response.ok) {
+      let errorMessage = `上传失败（HTTP ${response.status}）`
+
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.detail || errorMessage
+      } catch {
+        // 后端未返回 JSON 时保留 HTTP 状态码，避免丢失错误信息。
+      }
+
+      throw new Error(errorMessage)
+    }
+
+    const data = await response.json()
+    uploadMessage.value = `${data.message}，当前 chunk 数量：${data.chunk_count}`
+  } catch (error) {
+    console.error("上传失败：", error)
+    uploadMessage.value = `上传失败：${error.message}`
+  } finally {
+    uploading.value = false
+  }
+}
 </script>
 
 
@@ -67,15 +125,37 @@ async function handleSubmit() {
       <h1>本地知识库 RAG 问答系统</h1>
       <p class="subtitle">输入问题，后续会调用 FastAPI 后端获取回答。</p>
 
-      <!-- TODO 3：写 textarea，使用 v-model 绑定 question -->
+      <div class="upload-box">
+        <h2>上传知识库文档</h2>
+        <p class="upload-tip">当前支持上传 UTF-8 编码的 .txt 文件。</p>
+
+        <div class="upload-row">
+          <input
+            type="file"
+            accept=".txt"
+            @change="handleFileChange"
+            :disabled="uploading"
+          />
+
+          <button
+            class="upload-button"
+            @click="handleUpload"
+            :disabled="uploading"
+          >
+            {{ uploading ? "上传中..." : "上传文档" }}
+          </button>
+        </div>
+
+        <p class="upload-message" v-if="uploadMessage">
+          {{ uploadMessage }}
+        </p>
+      </div>
 
       <textarea
         v-model="question"
         :disabled="loading"
         placeholder="例如：开发 Python 后端 API 接口服务推荐用什么框架？"
       ></textarea>
-
-      <!-- TODO 4：写 button，点击时调用 handleSubmit -->
 
       <button @click="handleSubmit" :disabled="loading">
         {{ loading ? "正在思考..." : "提交问题" }}
@@ -151,6 +231,46 @@ h1 {
   color: #666;
   margin-top: 10px;
   margin-bottom: 24px;
+}
+
+.upload-box {
+  margin-bottom: 28px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f9fafb;
+}
+
+.upload-box h2 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.upload-tip {
+  color: #6b7280;
+  font-size: 14px;
+  margin-bottom: 14px;
+}
+
+.upload-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.upload-row input {
+  flex: 1;
+}
+
+.upload-button {
+  margin-top: 0;
+}
+
+.upload-message {
+  margin-top: 14px;
+  color: #374151;
+  font-size: 14px;
 }
 
 textarea {

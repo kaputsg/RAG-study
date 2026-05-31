@@ -8,7 +8,9 @@ FastAPI 后端接口模块。
 4. 返回模型回答和引用来源
 """
 
-from fastapi import FastAPI, HTTPException
+from pathlib import Path
+
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -35,11 +37,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+KNOWLEDGE_BASE_DIR = Path("data/knowledge_base")
+KNOWLEDGE_BASE_DIR.mkdir(parents=True, exist_ok=True)
+
 
 # 初始化 RAG 服务
 # 注意：这里会加载 BGE 模型、读取文档、建立 FAISS 索引，第一次启动会慢一点
 rag_service = RAGService(
-    knowledge_base_dir="data/knowledge_base",
+    knowledge_base_dir=str(KNOWLEDGE_BASE_DIR),
     chunk_size=120,
     chunk_overlap=30,
     top_k=3,
@@ -52,8 +57,21 @@ class AskRequest(BaseModel):
     /ask 接口的请求体格式。
     """
 
-    # TODO 1：定义 question 字段，类型是 str
     question: str = Field(..., min_length=1, description="用户问题")
+
+class UploadDocumentResponse(BaseModel):
+    filename: str
+    message: str
+    chunk_count: int
+
+class DocumentItem(BaseModel):
+    filename: str
+    path: str
+    size: int
+
+
+class DocumentListResponse(BaseModel):
+    documents: list[DocumentItem]
 
 class SourceItem(BaseModel):
     source: str
@@ -67,8 +85,6 @@ class AskResponse(BaseModel):
     /ask 接口的响应格式。
     """
 
-    # TODO 2：定义 answer 字段，类型是 str
-    # TODO 3：定义 sources 字段，类型是 list
     answer: str
     sources: list[SourceItem]
 
@@ -118,3 +134,76 @@ def ask(request: AskRequest):
             status_code=500,
             detail=f"RAG 服务调用失败：{e}"
         )
+
+@app.post("/documents/upload", response_model=UploadDocumentResponse)
+async def upload_document(file: UploadFile = File(...)):
+    """
+    上传 txt 文档到知识库，并重新构建 RAG 索引。
+    """
+
+    if not file.filename:
+        raise HTTPException(
+            status_code=400,
+            detail="文件名不能为空"
+        )
+
+    safe_filename = Path(file.filename).name
+
+    if not safe_filename.lower().endswith(".txt"):
+        raise HTTPException(
+            status_code=400,
+            detail="目前只支持上传 .txt 文件"
+        )
+
+    content = await file.read()
+
+    try:
+        text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(
+            status_code=400,
+            detail="文件编码必须是 UTF-8"
+        )
+
+    if not text.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="上传文件内容不能为空"
+        )
+
+    file_path = KNOWLEDGE_BASE_DIR / safe_filename
+    file_path.write_text(text, encoding="utf-8")
+
+    try:
+        rag_service.build_knowledge_base()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"知识库索引重建失败：{e}"
+        )
+
+    return {
+        "filename": safe_filename,
+        "message": "文档上传成功，知识库索引已重建",
+        "chunk_count": len(rag_service.chunks)
+    }
+
+@app.get("/documents", response_model=DocumentListResponse)
+def list_documents():
+    """
+    查看当前知识库中的 txt 文档列表。
+    """
+
+    documents = []
+
+    for file_path in KNOWLEDGE_BASE_DIR.glob("*.txt"):
+        document_item = DocumentItem(
+            filename=file_path.name,
+            path=str(file_path),
+            size=file_path.stat().st_size
+        )
+        documents.append(document_item)
+
+    return {
+        "documents": documents
+    }
