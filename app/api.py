@@ -64,6 +64,11 @@ class UploadDocumentResponse(BaseModel):
     message: str
     chunk_count: int
 
+class DeleteDocumentResponse(BaseModel):
+    filename: str
+    message: str
+    chunk_count: int
+
 class DocumentItem(BaseModel):
     filename: str
     path: str
@@ -206,4 +211,48 @@ def list_documents():
 
     return {
         "documents": documents
+    }
+
+@app.delete("/documents/{filename}", response_model=DeleteDocumentResponse)
+def delete_document(filename: str):
+    """
+    删除知识库中的 txt 文档，并重新构建 RAG 索引。
+    """
+
+    safe_filename = Path(filename).name
+
+    if not safe_filename.lower().endswith(".txt"):
+        raise HTTPException(
+            status_code=400,
+            detail="目前只支持删除 .txt 文件"
+        )
+
+    file_path = KNOWLEDGE_BASE_DIR / safe_filename
+
+    if not file_path.exists():
+        raise HTTPException(
+            status_code=404,
+            detail="文件不存在"
+        )
+
+    if not file_path.is_file():
+        raise HTTPException(
+            status_code=400,
+            detail="目标不是有效文件"
+        )
+
+    file_path.unlink()
+
+    try:
+        rag_service.build_knowledge_base()
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"知识库索引重建失败：{e}"
+        )
+
+    return {
+        "filename": safe_filename,
+        "message": "文档删除成功，知识库索引已重建",
+        "chunk_count": len(rag_service.chunks)
     }

@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue"
+import { ref, onMounted } from "vue"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000"
 
@@ -24,6 +24,86 @@ const selectedFile = ref(null)
 const uploadMessage = ref("")
 
 const uploading = ref(false)
+
+const documents = ref([])
+
+const documentsLoading = ref(false)
+
+const documentsError = ref("")
+
+const deletingFilename = ref("")
+
+const documentMessage = ref("")
+
+async function loadDocuments() {
+  documentsLoading.value = true
+  documentsError.value = ""
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/documents`)
+
+    if (!response.ok) {
+      let message = "获取文档列表失败"
+      try {
+        const errorData = await response.json()
+        message = errorData.detail || message
+      } catch {
+        message = `获取文档列表失败，状态码：${response.status}`
+      }
+      throw new Error(message)
+    }
+
+    const data = await response.json()
+    documents.value = data.documents || []
+  } catch (error) {
+    console.error("获取文档列表失败：", error)
+    documentsError.value = error.message
+  } finally {
+    documentsLoading.value = false
+  }
+}
+
+async function deleteDocument(filename) {
+  const confirmed = window.confirm(`确认删除文档：${filename}？`)
+
+  if (!confirmed) {
+    return
+  }
+
+  deletingFilename.value = filename
+  documentMessage.value = ""
+  documentsError.value = ""
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/documents/${encodeURIComponent(filename)}`, {
+      method: "DELETE"
+    })
+
+    if (!response.ok) {
+      let message = "删除文档失败"
+
+      try {
+        const errorData = await response.json()
+        message = errorData.detail || message
+      } catch {
+        message = `删除文档失败，状态码：${response.status}`
+      }
+
+      throw new Error(message)
+    }
+
+    const data = await response.json()
+
+    documentMessage.value = `${data.message}，当前 chunk 数量：${data.chunk_count}`
+
+    await loadDocuments()
+  } catch (error) {
+    console.error("删除文档失败：", error)
+    documentsError.value = error.message
+  } finally {
+    deletingFilename.value = ""
+  }
+}
 
 async function handleSubmit() {
   if (!question.value.trim()) {
@@ -109,6 +189,7 @@ async function handleUpload() {
 
     const data = await response.json()
     uploadMessage.value = `${data.message}，当前 chunk 数量：${data.chunk_count}`
+    await loadDocuments()
   } catch (error) {
     console.error("上传失败：", error)
     uploadMessage.value = `上传失败：${error.message}`
@@ -116,6 +197,10 @@ async function handleUpload() {
     uploading.value = false
   }
 }
+
+onMounted(() => {
+  loadDocuments()
+})
 </script>
 
 
@@ -149,6 +234,59 @@ async function handleUpload() {
         <p class="upload-message" v-if="uploadMessage">
           {{ uploadMessage }}
         </p>
+      </div>
+
+      <div class="documents-box">
+        <div class="documents-header">
+          <h2>当前知识库文档</h2>
+          <button
+            class="secondary-button"
+            @click="loadDocuments"
+            :disabled="documentsLoading"
+          >
+            {{ documentsLoading ? "刷新中..." : "刷新列表" }}
+          </button>
+        </div>
+
+        <p class="documents-error" v-if="documentsError">
+          {{ documentsError }}
+        </p>
+
+        <p class="documents-message" v-if="documentMessage">
+          {{ documentMessage }}
+        </p>
+
+        <p
+          class="documents-empty"
+          v-if="!documentsLoading && documents.length === 0"
+        >
+          当前知识库暂无文档。
+        </p>
+
+        <div class="document-list" v-if="documents.length > 0">
+          <div
+            class="document-item"
+            v-for="document in documents"
+            :key="document.filename"
+          >
+            <div class="document-info">
+              <strong>{{ document.filename }}</strong>
+              <p>{{ document.path }}</p>
+            </div>
+
+            <div class="document-actions">
+              <span>{{ document.size }} bytes</span>
+
+              <button
+                class="danger-button"
+                @click="deleteDocument(document.filename)"
+                :disabled="deletingFilename === document.filename"
+              >
+                {{ deletingFilename === document.filename ? "删除中..." : "删除" }}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <textarea
@@ -271,6 +409,118 @@ h1 {
   margin-top: 14px;
   color: #374151;
   font-size: 14px;
+}
+
+.documents-box {
+  margin-bottom: 28px;
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f9fafb;
+}
+
+.documents-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.documents-header h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.secondary-button {
+  margin-top: 0;
+  padding: 9px 14px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #374151;
+  font-size: 14px;
+}
+
+.secondary-button:hover {
+  background: #f3f4f6;
+}
+
+.documents-error {
+  margin: 16px 0 0;
+  color: #b91c1c;
+  font-size: 14px;
+}
+
+.documents-message {
+  color: #065f46;
+  background: #d1fae5;
+  padding: 10px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.documents-empty {
+  margin: 16px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.document-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.document-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #4b5563;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.document-item strong {
+  color: #111827;
+  font-size: 14px;
+}
+
+.document-info {
+  flex: 1;
+}
+
+.document-info p {
+  margin: 6px 0 0;
+}
+
+.document-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.danger-button {
+  margin-top: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  font-size: 14px;
+}
+
+.danger-button:hover {
+  background: #fecaca;
+}
+
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 textarea {
