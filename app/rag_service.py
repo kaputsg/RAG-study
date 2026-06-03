@@ -139,11 +139,30 @@ class RAGService:
         # TODO 7：返回 {"answer": answer, "sources": search_results}
 
         search_results = self.vector_store.search(question, self.top_k)
+        max_score = max(
+            (result.get("score", 0) for result in search_results),
+            default=0
+        )
+
+        if max_score >= 0.75:
+            confidence = "high"
+        elif max_score >= 0.65:
+            confidence = "medium"
+        else:
+            confidence = "low"
+
+        retrieval_info = {
+            "hit": bool(search_results),
+            "max_score": max_score,
+            "source_count": len(search_results),
+            "confidence": confidence
+        }
 
         if not search_results:
             return {
-                "answer": "抱歉，我无法找到相关信息来回答您的问题。",
-                "sources": []
+                "answer": "我没有在知识库中找到相关信息。",
+                "sources": [],
+                "retrieval_info": retrieval_info
             }
         
         context = self.build_context(search_results)
@@ -173,5 +192,6 @@ class RAGService:
 
         return {
             "answer": answer,
-            "sources": search_results
+            "sources": search_results,
+            "retrieval_info": retrieval_info
         }

@@ -1,0 +1,56 @@
+[
+  {
+    "id": "known_fastapi_backend",
+    "question": "开发 Python 后端 API 接口服务推荐用什么框架？",
+    "expected_keywords": ["FastAPI"],
+    "expected_hit": true,
+    "expected_confidence": "medium",
+    "type": "known",
+    "note": "当前知识库 python_backend.txt 中包含 FastAPI 相关内容。"
+  },
+  {
+    "id": "known_rag_flow",
+    "question": "RAG 的基本流程是什么？",
+    "expected_keywords": ["检索", "生成"],
+    "expected_hit": true,
+    "expected_confidence": "medium",
+    "type": "known",
+    "note": "当前知识库 rag_intro.txt 中包含 RAG 基本流程。"
+  },
+  {
+    "id": "known_vue_role",
+    "question": "Vue 在这个项目中负责什么？",
+    "expected_keywords": ["前端", "页面"],
+    "expected_hit": true,
+    "expected_confidence": "medium",
+    "type": "known",
+    "note": "当前知识库 frontend_vue.txt 中包含 Vue 前端职责。"
+  },
+  {
+    "id": "unknown_acid",
+    "question": "数据库事务的 ACID 是什么？",
+    "expected_keywords": ["我没有在知识库中找到相关信息"],
+    "expected_hit": false,
+    "expected_confidence": "low",
+    "type": "unknown",
+    "note": "当前知识库没有数据库事务 ACID 相关内容。"
+  },
+  {
+    "id": "tool_calling_scenarios",
+    "question": "AI 工具调用常用于哪些场景？",
+    "expected_keywords": ["查询数据库", "搜索", "文件"],
+    "expected_hit": true,
+    "expected_confidence": "medium",
+    "type": "tool_calling",
+    "note": "当前知识库包含 ai_tools_intro.txt；如果该文件不存在，这条可能失败，可用于测试上传后的效果。"
+  },
+  {
+    "id": "document_management_support",
+    "question": "当前系统支持上传和删除知识库文档吗？",
+    "expected_keywords": ["我没有在知识库中找到相关信息"],
+    "expected_hit": false,
+    "expected_confidence": "low",
+    "type": "document_management",
+    "note": "当前知识库内容没有描述上传和删除知识库文档能力，因此按知识库检索预期设置为不命中。"
+  }
+]

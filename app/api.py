@@ -14,6 +14,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from app.rag_logger import write_rag_log
 from app.rag_service import RAGService
 
 
@@ -85,6 +86,13 @@ class SourceItem(BaseModel):
     score: float
 
 
+class RetrievalInfo(BaseModel):
+    hit: bool
+    max_score: float
+    source_count: int
+    confidence: str
+
+
 class AskResponse(BaseModel):
     """
     /ask 接口的响应格式。
@@ -92,6 +100,7 @@ class AskResponse(BaseModel):
 
     answer: str
     sources: list[SourceItem]
+    retrieval_info: RetrievalInfo
 
 
 @app.get("/")
@@ -132,9 +141,25 @@ def ask(request: AskRequest):
 
     try:
         result = rag_service.ask(question)
+        write_rag_log(
+            question=question,
+            answer=result["answer"],
+            retrieval_info=result.get("retrieval_info", {}),
+            sources=result.get("sources", []),
+            success=True,
+            error=None
+        )
         return result
 
     except Exception as e:
+        write_rag_log(
+            question=question,
+            answer="",
+            retrieval_info={},
+            sources=[],
+            success=False,
+            error=str(e)
+        )
         raise HTTPException(
             status_code=500,
             detail=f"RAG 服务调用失败：{e}"

@@ -13,6 +13,9 @@ const answer = ref("")
 // 后端返回的引用来源
 const sources = ref([])
 
+// 后端返回的检索质量信息
+const retrievalInfo = ref(null)
+
 // 加载状态
 const loading = ref(false)
 
@@ -109,6 +112,7 @@ async function handleSubmit() {
   if (!question.value.trim()) {
   answer.value = "请先输入问题。"
   sources.value = []
+  retrievalInfo.value = null
   errorMessage.value = ""
   return
   }
@@ -116,6 +120,7 @@ async function handleSubmit() {
   loading.value = true
   answer.value = ""
   sources.value = []
+  retrievalInfo.value = null
   errorMessage.value = ""
 
   try {
@@ -137,7 +142,8 @@ async function handleSubmit() {
     const data = await response.json()
 
     answer.value = data.answer
-    sources.value = data.sources
+    sources.value = data.sources || []
+    retrievalInfo.value = data.retrieval_info || null
   } catch (error) {
     errorMessage.value = error.message
   } finally {
@@ -310,6 +316,28 @@ onMounted(() => {
       <div class="answer-box" v-if="answer">
         <h2>回答</h2>
         <p>{{ answer }}</p>
+      </div>
+
+      <div class="retrieval-box" v-if="retrievalInfo">
+        <h2>检索质量</h2>
+        <div class="retrieval-grid">
+          <div>
+            <span>是否命中知识库</span>
+            <strong>{{ retrievalInfo.hit ? "是" : "否" }}</strong>
+          </div>
+          <div>
+            <span>最高相似度</span>
+            <strong>{{ Number(retrievalInfo.max_score || 0).toFixed(4) }}</strong>
+          </div>
+          <div>
+            <span>引用来源数量</span>
+            <strong>{{ retrievalInfo.source_count }}</strong>
+          </div>
+          <div>
+            <span>置信度</span>
+            <strong>{{ retrievalInfo.confidence }}</strong>
+          </div>
+        </div>
       </div>
 
        <p class="no-sources" v-if="answer && sources.length === 0">
@@ -574,6 +602,43 @@ button:disabled {
 
 .answer-box h2 {
   margin-top: 0;
+}
+
+.retrieval-box {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.retrieval-box h2 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.retrieval-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.retrieval-grid div {
+  padding: 12px;
+  border-radius: 10px;
+  background: #f9fafb;
+}
+
+.retrieval-grid span {
+  display: block;
+  margin-bottom: 6px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.retrieval-grid strong {
+  color: #111827;
+  font-size: 15px;
 }
 
 .error-box {
