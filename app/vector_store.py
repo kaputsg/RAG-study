@@ -7,6 +7,9 @@
 3. 根据用户问题检索相关 chunks
 """
 
+import json
+from pathlib import Path
+
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
@@ -101,6 +104,53 @@ class VectorStore:
         self.index = faiss.IndexFlatIP(dimension)
         
         self.index.add(vectors)
+
+    def save(self, index_path: str | Path, chunks_path: str | Path) -> None:
+        """
+        保存 FAISS 索引和 chunks 元数据到本地文件。
+        """
+
+        if self.index is None:
+            raise ValueError("没有可保存的 FAISS 索引，请先调用 build_index")
+
+        index_path = Path(index_path)
+        chunks_path = Path(chunks_path)
+        index_path.parent.mkdir(parents=True, exist_ok=True)
+        chunks_path.parent.mkdir(parents=True, exist_ok=True)
+
+        faiss.write_index(self.index, str(index_path))
+
+        with chunks_path.open("w", encoding="utf-8") as file:
+            json.dump(self.chunks, file, ensure_ascii=False, indent=2)
+
+    def load(self, index_path: str | Path, chunks_path: str | Path) -> None:
+        """
+        从本地文件加载 FAISS 索引和 chunks 元数据。
+        """
+
+        index_path = Path(index_path)
+        chunks_path = Path(chunks_path)
+
+        if not index_path.exists():
+            raise FileNotFoundError(f"FAISS 索引文件不存在: {index_path}")
+        if not chunks_path.exists():
+            raise FileNotFoundError(f"chunks 元数据文件不存在: {chunks_path}")
+
+        self.index = faiss.read_index(str(index_path))
+
+        with chunks_path.open("r", encoding="utf-8") as file:
+            self.chunks = json.load(file)
+
+    def has_persisted_index(
+        self,
+        index_path: str | Path,
+        chunks_path: str | Path
+    ) -> bool:
+        """
+        检查本地 FAISS 索引和 chunks 元数据是否同时存在。
+        """
+
+        return Path(index_path).exists() and Path(chunks_path).exists()
 
     def search(self, question: str, top_k: int = 3):
         """

@@ -9,6 +9,8 @@ RAG 服务模块。
 5. 调用 DeepSeek 生成答案
 """
 
+from pathlib import Path
+
 from app.document_loader import DocumentLoader
 from app.vector_store import VectorStore
 from app.deepseek_client import deepseek_client
@@ -29,7 +31,8 @@ class RAGService:
         chunk_size: int = 120,
         chunk_overlap: int = 30,
         top_k: int = 3,
-        similarity_threshold: float = 0.65
+        similarity_threshold: float = 0.65,
+        persist_dir: str = "data/vector_store"
     ):
         """
         初始化 RAG 服务。
@@ -57,11 +60,28 @@ class RAGService:
         self.chunk_overlap = chunk_overlap
         self.top_k = top_k
         self.similarity_threshold = similarity_threshold
+        self.persist_dir = Path(persist_dir)
+        self.index_path = self.persist_dir / "faiss.index"
+        self.chunks_path = self.persist_dir / "chunks.json"
 
         self.document_loader = DocumentLoader(self.knowledge_base_dir)
         self.vector_store = VectorStore(similarity_threshold=self.similarity_threshold)
         self.chunks = []
 
+        self.load_or_build_knowledge_base()
+
+    def load_or_build_knowledge_base(self):
+        """
+        优先加载本地持久化索引；如果不存在，则重新构建知识库索引。
+        """
+
+        if self.vector_store.has_persisted_index(self.index_path, self.chunks_path):
+            self.vector_store.load(self.index_path, self.chunks_path)
+            self.chunks = self.vector_store.chunks
+            print(f"已加载本地向量索引，chunk 数量：{len(self.chunks)}")
+            return
+
+        print("未发现本地索引，开始重新构建知识库索引...")
         self.build_knowledge_base()
 
     def build_knowledge_base(self):
@@ -77,12 +97,18 @@ class RAGService:
 
         # TODO 4：调用 self.vector_store.build_index(self.chunks)
 
-        self.chunks = self.document_loader.load_and_split()
+        print("开始构建新的知识库索引...")
+        self.chunks = self.document_loader.load_and_split(
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap
+        )
         
         if not self.chunks:
             raise ValueError("没有加载到任何文档，请检查知识库目录。")
         
         self.vector_store.build_index(self.chunks)
+        self.vector_store.save(self.index_path, self.chunks_path)
+        print(f"向量索引保存成功：{self.index_path}，chunks：{self.chunks_path}")
 
 
     def build_context(self, search_results):

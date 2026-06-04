@@ -9,3 +9,5 @@ frontend/dist/
 frontend/.env.local
 logs/*.jsonl
 logs/*.log
+data/vector_store/*.index
+data/vector_store/*.json
