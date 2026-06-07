@@ -14,6 +14,13 @@ from pathlib import Path
 from app.document_loader import DocumentLoader
 from app.vector_store import VectorStore
 from app.deepseek_client import deepseek_client
+from app.index_manifest import (
+    build_manifest,
+    has_manifest,
+    load_manifest,
+    manifest_matches,
+    save_manifest,
+)
 
 
 class RAGService:
@@ -55,7 +62,7 @@ class RAGService:
 
         # TODO 5：调用 self.build_knowledge_base()
 
-        self.knowledge_base_dir = knowledge_base_dir
+        self.knowledge_base_dir = Path(knowledge_base_dir)
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
         self.top_k = top_k
@@ -63,6 +70,7 @@ class RAGService:
         self.persist_dir = Path(persist_dir)
         self.index_path = self.persist_dir / "faiss.index"
         self.chunks_path = self.persist_dir / "chunks.json"
+        self.manifest_path = self.persist_dir / "manifest.json"
 
         self.document_loader = DocumentLoader(self.knowledge_base_dir)
         self.vector_store = VectorStore(similarity_threshold=self.similarity_threshold)
@@ -75,13 +83,37 @@ class RAGService:
         优先加载本地持久化索引；如果不存在，则重新构建知识库索引。
         """
 
-        if self.vector_store.has_persisted_index(self.index_path, self.chunks_path):
-            self.vector_store.load(self.index_path, self.chunks_path)
-            self.chunks = self.vector_store.chunks
-            print(f"已加载本地向量索引，chunk 数量：{len(self.chunks)}")
+        current_manifest = build_manifest(self.knowledge_base_dir)
+        has_index = self.vector_store.has_persisted_index(
+            self.index_path,
+            self.chunks_path
+        )
+        has_saved_manifest = has_manifest(self.manifest_path)
+
+        if not has_index:
+            print("未发现本地索引，开始重新构建知识库索引...")
+            self.build_knowledge_base()
             return
 
-        print("未发现本地索引，开始重新构建知识库索引...")
+        if not has_saved_manifest:
+            print("未发现 manifest，开始重新构建知识库索引...")
+            self.build_knowledge_base()
+            return
+
+        try:
+            saved_manifest = load_manifest(self.manifest_path)
+        except Exception as error:
+            print(f"manifest 读取失败，开始重新构建知识库索引：{error}")
+            self.build_knowledge_base()
+            return
+
+        if manifest_matches(current_manifest, saved_manifest):
+            self.vector_store.load(self.index_path, self.chunks_path)
+            self.chunks = self.vector_store.chunks
+            print(f"已加载本地向量索引，知识库未变化，chunk 数量：{len(self.chunks)}")
+            return
+
+        print("知识库文件已变化，开始重新构建知识库索引...")
         self.build_knowledge_base()
 
     def build_knowledge_base(self):
@@ -109,6 +141,9 @@ class RAGService:
         self.vector_store.build_index(self.chunks)
         self.vector_store.save(self.index_path, self.chunks_path)
         print(f"向量索引保存成功：{self.index_path}，chunks：{self.chunks_path}")
+        current_manifest = build_manifest(self.knowledge_base_dir)
+        save_manifest(current_manifest, self.manifest_path)
+        print("manifest 已更新")
 
 
     def build_context(self, search_results):
