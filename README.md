@@ -72,8 +72,11 @@ RAG-study/
 ├─ data/
 │  └─ knowledge_base/        # 本地 txt 知识库
 ├─ docs/
-│  ├─ demo_flow.md           # 项目演示流程
-│  └─ interview_qa.md        # 项目面试问答
+│  ├─ demo_flow.md               # 项目演示流程
+│  ├─ deployment_guide.md        # 部署准备说明
+│  ├─ docker_plan.md             # Docker 化后续规划
+│  ├─ production_checklist.md    # 上线前安全检查清单
+│  └─ interview_qa.md            # 项目面试问答
 ├─ frontend/
 │  ├─ src/
 │  │  ├─ App.vue             # 问答、上传、列表和删除页面
@@ -163,6 +166,73 @@ npm run dev
 ```text
 http://localhost:5173
 ```
+
+---
+
+## 部署准备
+
+Day 16 只整理部署准备、生产环境配置说明和上线前检查清单，不表示项目已经正式上线，也不表示已经完成 Docker 化。
+
+### 开发环境启动
+
+开发环境适合本地调试，后端建议使用 `--reload`，代码变更后会自动重载：
+
+```powershell
+python -m uvicorn app.api:app --reload --host 127.0.0.1 --port 8000
+```
+
+前端开发环境启动：
+
+```powershell
+cd frontend
+npm run dev
+```
+
+说明：
+
+* `--reload` 适合开发环境，不建议生产环境使用。
+* `127.0.0.1` 只允许本机访问，适合本地调试。
+* 前端开发服务通常运行在 `http://localhost:5173`。
+
+### 生产环境启动
+
+后端基础生产启动示例：
+
+```powershell
+python -m uvicorn app.api:app --host 0.0.0.0 --port 8000
+```
+
+说明：
+
+* 生产环境后端启动命令不建议使用 `--reload`。
+* `0.0.0.0` 可让服务器外部访问，需要配合服务器防火墙、安全组和反向代理配置。
+* 更正式的生产部署可以继续接入 Nginx、进程守护工具、Docker 或云服务器部署。
+
+前端生产打包：
+
+```powershell
+cd frontend
+npm run build
+```
+
+如果打包成功，会生成：
+
+```text
+frontend/dist/
+```
+
+说明：
+
+* `frontend/dist/` 是前端构建产物，不提交 Git。
+* 生产环境可以把 `frontend/dist/` 部署到 Nginx 或静态托管服务。
+* 前端生产环境需要配置 `VITE_API_BASE_URL` 为后端线上地址。
+* 如果 `npm run build` 失败，先检查 Node.js、`npm install`、环境变量和代码语法。
+
+### 部署相关文档
+
+* [部署准备说明](docs/deployment_guide.md)
+* [上线前安全检查清单](docs/production_checklist.md)
+* [Docker 化后续规划](docs/docker_plan.md)
 
 ---
 
@@ -544,3 +614,6 @@ rag_intro.txt
 
 * [项目演示流程](docs/demo_flow.md)
 * [项目面试问答](docs/interview_qa.md)
+* [部署准备说明](docs/deployment_guide.md)
+* [上线前安全检查清单](docs/production_checklist.md)
+* [Docker 化后续规划](docs/docker_plan.md)
