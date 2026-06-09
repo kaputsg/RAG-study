@@ -1,0 +1,15 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rag-study-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      - ./data/knowledge_base:/app/data/knowledge_base
+      - ./data/vector_store:/app/data/vector_store
+      - ./logs:/app/logs
+    restart: unless-stopped

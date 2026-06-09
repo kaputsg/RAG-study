@@ -74,6 +74,7 @@ RAG-study/
 ├─ docs/
 │  ├─ demo_flow.md               # 项目演示流程
 │  ├─ deployment_guide.md        # 部署准备说明
+│  ├─ docker_guide.md            # Docker 启动指南
 │  ├─ docker_plan.md             # Docker 化后续规划
 │  ├─ production_checklist.md    # 上线前安全检查清单
 │  └─ interview_qa.md            # 项目面试问答
@@ -85,6 +86,9 @@ RAG-study/
 │  ├─ package.json
 │  └─ vite.config.js
 ├─ scripts/
+├─ .dockerignore             # Docker 构建忽略规则
+├─ docker-compose.yml        # 本地后端容器启动配置
+├─ Dockerfile                # FastAPI 后端容器镜像定义
 ├─ .env.example              # 后端环境变量示例
 ├─ requirements.txt
 └─ README.md
@@ -169,9 +173,86 @@ http://localhost:5173
 
 ---
 
+## Docker 启动方式（Day 17）
+
+Day 17 只 Docker 化 FastAPI 后端，不做前端 Nginx 容器，不表示项目已经正式上线。
+
+详细说明见：
+
+* [Docker 启动指南](docs/docker_guide.md)
+* [Docker 化规划](docs/docker_plan.md)
+
+### Docker 部署准备
+
+启动前请确认：
+
+* 已安装并启动 Docker Desktop。
+* 项目根目录存在 `.env`。
+* `.env` 中已经配置 DeepSeek API Key。
+* `data/knowledge_base/` 中存在知识库 `.txt` 文件。
+
+不要把真实 API Key 写入 `Dockerfile`、`docker-compose.yml` 或 README。
+
+### 使用 docker build 和 docker run
+
+在项目根目录执行：
+
+```powershell
+docker build -t rag-study-backend .
+docker run --env-file .env -p 8000:8000 rag-study-backend
+```
+
+### 使用 docker compose
+
+在项目根目录执行：
+
+```powershell
+docker compose up --build
+```
+
+停止容器：
+
+```powershell
+docker compose down
+```
+
+`docker-compose.yml` 会挂载以下本地目录：
+
+```text
+data/knowledge_base/
+data/vector_store/
+logs/
+```
+
+这样容器重启后，知识库、FAISS 索引和问答日志仍保留在本机项目目录中。
+
+### 前端连接 Docker 后端
+
+Day 17 前端仍可本地运行：
+
+```powershell
+cd frontend
+npm run dev
+```
+
+前端 API 地址仍然指向本机后端端口：
+
+```env
+VITE_API_BASE_URL=http://127.0.0.1:8000
+```
+
+启动后可以访问：
+
+```text
+健康检查：http://127.0.0.1:8000/health
+接口文档：http://127.0.0.1:8000/docs
+```
+
+---
+
 ## 部署准备
 
-Day 16 只整理部署准备、生产环境配置说明和上线前检查清单，不表示项目已经正式上线，也不表示已经完成 Docker 化。
+Day 16 整理部署准备、生产环境配置说明和上线前检查清单。Day 17 完成后端 Docker 化初步实现，但只覆盖本地后端容器启动，不表示项目已经正式上线。
 
 ### 开发环境启动
 
@@ -232,7 +313,8 @@ frontend/dist/
 
 * [部署准备说明](docs/deployment_guide.md)
 * [上线前安全检查清单](docs/production_checklist.md)
-* [Docker 化后续规划](docs/docker_plan.md)
+* [Docker 启动指南](docs/docker_guide.md)
+* [Docker 化规划](docs/docker_plan.md)
 
 ---
 
@@ -601,6 +683,9 @@ rag_intro.txt
 * `.env` 中包含真实 API Key，不要提交到 GitHub 或 Gitee。
 * `frontend/.env.local` 是本地配置文件，不要提交。
 * `frontend/node_modules/` 和 `frontend/dist/` 不要提交。
+* Day 17 只 Docker 化后端，不包含前端 Nginx 容器、HTTPS、域名或线上服务器部署。
+* Docker 启动时通过 `.env` 注入环境变量，不要把真实 API Key 写进镜像或 compose 文件。
+* 使用 `docker compose` 启动时，`data/knowledge_base/`、`data/vector_store/` 和 `logs/` 会通过 volume 挂载保留。
 * 当前仅支持 UTF-8 编码的 `.txt` 文档。
 * 上传同名 `.txt` 文件会覆盖知识库中的同名文件。
 * 上传和删除文档会触发全量索引重建，文档较多时耗时会增加。
@@ -616,4 +701,5 @@ rag_intro.txt
 * [项目面试问答](docs/interview_qa.md)
 * [部署准备说明](docs/deployment_guide.md)
 * [上线前安全检查清单](docs/production_checklist.md)
-* [Docker 化后续规划](docs/docker_plan.md)
+* [Docker 启动指南](docs/docker_guide.md)
+* [Docker 化规划](docs/docker_plan.md)
