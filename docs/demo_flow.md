@@ -420,3 +420,92 @@ http://127.0.0.1:5173
 **排查**
 
 确认知识库中至少还保留一个有效的 UTF-8 `.txt` 文档。当前实现要求至少加载到一个 chunk 才能建立索引。
+
+---
+
+## 6. Day 13 - Day 17 最终演示补充
+
+原有上传、问答和删除流程保持不变。最终录屏或答辩时，可以在步骤 3 展示回答后补充以下内容。
+
+### 6.1 展示 retrieval_info
+
+除 `answer` 和 `sources` 外，前端还会展示 `retrieval_info`：
+
+* `hit`：是否检索到超过阈值的内容
+* `max_score`：本次检索的最高相似度
+* `source_count`：返回的引用来源数量
+* `confidence`：基于检索分数得到的置信度等级
+
+演示时可以说明：`retrieval_info` 用于观察检索质量，不代表模型回答一定正确。知识库没有相关资料时，系统应拒答或显示低置信度。
+
+### 6.2 展示日志系统
+
+完成一次问答后，可以打开或说明：
+
+```text
+logs/rag_requests.jsonl
+```
+
+日志用于记录问答和检索信息，方便排查与复盘。公开录屏前应检查日志内容，避免展示敏感问题。
+
+### 6.3 说明 eval 脚本
+
+根据演示时间选择运行或口头说明：
+
+```powershell
+python -m scripts.day13_test_api
+python -m scripts.day13_eval_questions
+```
+
+评估脚本用于检查接口返回、已知问题命中和未知问题拒答等基础场景。
+
+### 6.4 说明 FAISS 索引持久化
+
+运行后会在 `data/vector_store/` 中生成：
+
+```text
+faiss.index
+chunks.json
+manifest.json
+```
+
+后端再次启动时会优先加载已有的 FAISS 索引和 chunks，减少重复计算 embedding 的成本。可以使用以下脚本检查持久化流程：
+
+```powershell
+python -m scripts.day14_test_persist_index
+```
+
+### 6.5 说明 manifest 变更检测
+
+`manifest.json` 记录知识库文件状态。后端启动时会比较当前知识库与已保存 manifest；如果文件发生变化，则重新构建索引，避免旧索引与新资料不一致。
+
+```powershell
+python -m scripts.day15_test_index_manifest
+```
+
+### 6.6 说明 Docker 后端容器化
+
+当前完成的是后端容器化初步实现，可以展示以下启动方式：
+
+```powershell
+docker build -t rag-study-backend .
+docker run --env-file .env -p 8000:8000 rag-study-backend
+docker compose up --build
+```
+
+Docker 启动后检查：
+
+```text
+http://127.0.0.1:8000/health
+http://127.0.0.1:8000/docs
+```
+
+不要描述为已经正式上线。当前 Docker 范围主要是 FastAPI 后端，前端仍可通过本地 `npm run dev` 连接后端。
+
+### 6.7 最终演示资料
+
+更完整的逐字演示脚本、验收清单和项目讲解稿见：
+
+* [最终项目演示脚本](final_demo_script.md)
+* [项目最终验收清单](final_acceptance_checklist.md)
+* [项目讲解稿](project_pitch.md)

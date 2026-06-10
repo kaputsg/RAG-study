@@ -691,7 +691,7 @@ rag_intro.txt
 * 上传和删除文档会触发全量索引重建，文档较多时耗时会增加。
 * 后端启动时会加载 BGE 模型并建立 FAISS 索引，首次启动可能较慢。
 * 如果前端请求失败，请先检查后端是否已启动，以及 `VITE_API_BASE_URL` 是否正确。
-* 当前项目用于本地学习和演示，还没有实现生产环境所需的鉴权、持久化索引和完整事务处理。
+* 当前项目用于本地学习和演示，已经实现基础索引持久化，但还没有生产环境所需的鉴权、增量索引和完整事务处理。
 
 ---
 
@@ -703,3 +703,11 @@ rag_intro.txt
 * [上线前安全检查清单](docs/production_checklist.md)
 * [Docker 启动指南](docs/docker_guide.md)
 * [Docker 化规划](docs/docker_plan.md)
+
+### 项目展示与最终验收
+
+* [项目最终验收清单](docs/final_acceptance_checklist.md)：逐项检查本地环境、RAG、文档管理、索引、日志、Docker 和 Git 安全。
+* [最终项目演示脚本](docs/final_demo_script.md)：适合录屏、答辩和面试的完整演示顺序与异常处理。
+* [项目讲解稿](docs/project_pitch.md)：包含 30 秒、1 分钟、2 分钟和面试口语版本。
+* [简历项目描述](docs/resume_project.md)：提供中英文简历、STAR 描述和常见追问回答。
+* [社交平台展示文案](docs/social_post.md)：提供短视频、小红书、粉丝群和 GitHub 发布文案。
