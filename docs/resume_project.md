@@ -129,3 +129,36 @@ Tech Stack: Python, FastAPI, Vue 3, Vite, DeepSeek API, BGE, FAISS, Docker
 - Built FastAPI endpoints for Q&A, document listing, upload, and deletion, and developed a Vue 3 interface for answers, sources, retrieval quality, and document operations.
 - Added JSONL logs, evaluation scripts, FAISS index persistence, and manifest-based change detection to improve explainability, testing, startup efficiency, and index consistency.
 - Added initial backend containerization with Dockerfile and docker-compose. The current version supports UTF-8 `.txt` files and is designed as a local learning project rather than a complete SaaS product.
+
+## 八、实习投递版简历描述
+
+**RAG-study 本地知识库 RAG 问答系统**  
+技术栈：Python、FastAPI、Vue 3、Vite、DeepSeek API、BGE、FAISS、Docker
+
+- 独立完成本地知识库 RAG 问答项目，覆盖 DeepSeek API 调用、`.env` 配置管理、txt 文档读取、chunk 切分、向量检索、模型生成和前端展示。
+- 使用 `BAAI/bge-small-zh-v1.5` 生成中文 embedding，使用 FAISS 构建本地向量索引，实现基于知识库片段的语义检索。
+- 基于 FastAPI 提供问答、健康检查、文档列表、上传和删除接口，基于 Vue 3 实现问题输入、答案展示、引用来源、检索信息和文档管理。
+- 增加 sources 和 retrieval_info 展示，辅助判断回答依据和检索质量；补充 JSONL 问答日志、基础评估脚本、索引持久化和 manifest 变更检测。
+- 使用 Dockerfile 和 docker-compose 完成后端容器化初步实践；当前项目定位为本地学习和作品集展示，仅支持 UTF-8 `.txt` 文档。
+
+## 九、更保守真实版简历描述
+
+**RAG-study 本地知识库问答学习项目**
+
+- 系统学习并实践 RAG 应用开发流程，使用 FastAPI、Vue、BGE、FAISS 和 DeepSeek API 搭建本地知识库问答原型。
+- 实现 txt 文档读取、固定长度 chunk 切分、中文 embedding 生成、FAISS 相似度检索和基于检索上下文的回答生成。
+- 实现基础前后端交互，包括问答提交、答案展示、引用来源展示、检索信息展示、文档上传、文档列表和删除。
+- 补充日志、基础评估问题集、FAISS 索引持久化、manifest 变更检测和后端 Docker 化练习。
+- 当前项目主要用于本地学习和面试展示，不包含多用户权限、数据库后台和正式线上部署。
+
+## 十、不要这样写
+
+下面这些写法不建议放进简历，因为会超出当前项目实际能力：
+
+- 不要写“精通 RAG / 精通大模型应用开发”。可以写“系统学习并实践了 RAG 应用开发流程”。
+- 不要写“企业级知识库问答系统”。可以写“本地知识库 RAG 问答原型”。
+- 不要写“支持高并发访问”。项目当前没有做压测、限流、队列或横向扩展。
+- 不要写“项目已商用 / 已上线”。当前项目定位是本地学习和作品集展示。
+- 不要写“支持 PDF/Word 等全格式文档”。当前只支持 UTF-8 `.txt`。
+- 不要写“实现多用户权限系统”。当前没有用户体系、权限隔离和数据库后台。
+- 不要写“完整 SaaS 平台”。可以写“覆盖从 API 调用到前后端展示、评估和部署准备的完整练习”。

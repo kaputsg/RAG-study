@@ -704,6 +704,14 @@ rag_intro.txt
 * [Docker 启动指南](docs/docker_guide.md)
 * [Docker 化规划](docs/docker_plan.md)
 
+### 面试与作品集资料
+
+* [面试追问训练](docs/interview_drill.md)：围绕 RAG、Embedding、FAISS、chunk、Docker 和项目边界整理高频追问。
+* [项目自我介绍](docs/self_introduction.md)：包含 15 秒、30 秒、1 分钟、2 分钟和不同场景介绍版本。
+* [GitHub / 作品集展示说明](docs/portfolio_showcase.md)：整理 README 首屏、截图、演示视频和不同受众文案。
+* [技术亮点总结](docs/technical_highlights.md)：按 API、RAG、Embedding、FAISS、前后端、日志评估、持久化和 Docker 分模块说明。
+* [Day 1-Day 18 学习复盘](docs/project_review_day1_day18.md)：总结项目阶段、学习收获、能力边界和后续规划。
+
 ### 项目展示与最终验收
 
 * [项目最终验收清单](docs/final_acceptance_checklist.md)：逐项检查本地环境、RAG、文档管理、索引、日志、Docker 和 Git 安全。
