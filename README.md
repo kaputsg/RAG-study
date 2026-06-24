@@ -8,6 +8,24 @@
 
 ---
 
+## 项目状态
+
+当前版本：v1.0
+
+项目状态：第一阶段已完成
+
+项目定位：本地知识库 RAG 问答系统
+
+当前能力：可本地运行、可演示、可写入简历、可继续二阶段扩展
+
+v1.0 收尾文档：
+
+* [RAG-study v1.0 版本说明](docs/release_v1.0.md)
+* [Day 1-Day 20 最终项目总结](docs/final_summary.md)
+* [RAG-study 第二阶段规划](docs/phase2_plan.md)
+
+---
+
 ## 功能特点
 
 ### RAG 问答
